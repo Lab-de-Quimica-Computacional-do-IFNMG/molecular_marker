@@ -1,0 +1,68 @@
+#!pip install rdkit
+from rdkit import Chem
+from rdkit.Chem.Draw import rdMolDraw2D
+
+# Definir a molécula (modifique o SMILES aqui)
+smi = ''
+mol = Chem.MolFromSmiles(smi)
+
+# Definir as funções e suas SMARTS
+funcoes_smarts = {
+    "": "",
+    "": "",
+    "": "",
+    "": "",
+    "": ""
+}
+
+# Paleta de cores (até 10 funções)
+cores = [
+    (1.0, 0.0, 0.0),  # Vermelho
+    (0.0, 1.0, 0.0),  # Verde
+    (0.0, 0.0, 1.0),  # Azul
+    (1.0, 1.0, 0.0),  # Amarelo
+    (1.0, 0.5, 0.0),  # Laranja
+    (0.5, 0.0, 0.5),  # Roxo
+    (0.0, 1.0, 1.0),  # Ciano
+    (1.0, 0.0, 1.0),  # Magenta
+    (0.5, 0.5, 0.5),  # Cinza
+    (0.0, 0.0, 0.0)  # Preto
+]
+
+# Inicializar dicionários para destacar átomos e ligações
+highlight_atoms = {}
+highlight_bonds = {}
+
+# Iterar sobre as funções
+for i, (nome_funcao, smarts) in enumerate(funcoes_smarts.items()):
+    padrao = Chem.MolFromSmarts(smarts)
+    if not padrao:
+        print(f"SMARTS inválido: {smarts}")
+        continue
+
+    matches = mol.GetSubstructMatches(padrao)
+    cor = cores[i % len(cores)]  # Selecionar cor da lista
+
+    # Adicionar átomos e ligações ao destaque
+    for match in matches:
+        for atom_idx in match:
+            highlight_atoms[atom_idx] = cor
+        for bond in padrao.GetBonds():
+            aid1 = match[bond.GetBeginAtomIdx()]
+            aid2 = match[bond.GetEndAtomIdx()]
+            bond_idx = mol.GetBondBetweenAtoms(aid1, aid2).GetIdx()
+            highlight_bonds[bond_idx] = cor
+
+# Desenhar a molécula com destaques
+d = rdMolDraw2D.MolDraw2DSVG(600, 600)
+rdMolDraw2D.PrepareAndDrawMolecule(d, mol, highlightAtoms=highlight_atoms,
+                                   highlightBonds=highlight_bonds,
+                                   highlightAtomColors=highlight_atoms,
+                                   highlightBondColors=highlight_bonds)
+
+d.FinishDrawing()
+svg = d.GetDrawingText()
+
+# Exibir o SVG
+from IPython.display import SVG, display
+display(SVG(svg))
